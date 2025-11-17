@@ -11,33 +11,38 @@ Description: An N5 Japanese vocabulary tester in Tkinter (Python GUI)
 
 # Imports
 import random
+import pandas as pd
 from tkinter import *
 from tkinter import ttk
-root = Tk()
 
-# Window Setup and grid
-frm = ttk.Frame(root, padding=10)
+
+# Window Setup and grid ----------------------------------
+root = Tk()
+root.title("Japanese N5 Vocab Quiz")
+root.configure(bg='black')
+
+frm = ttk.Frame(root, padding=20)
 frm.grid()
 
-# Label for vocab display.
-vocab_label = ttk.Label(frm, text="", font=("Arial", 30))
-vocab_label.grid(column=2, row=1)
-
-# Label for english display (hidden)
-english = ttk.Label(frm, text="", font=("Arial", 20))
-english.grid(column=2, row=2)
+# Load the CSV file with Pandas
+df = pd.read_csv("n5_vocab.csv")
 
 # Read the vocab file
-with open("n5_vocab.csv", "r", encoding="utf-8") as file:
-    file_lines = file.readlines()
+# with open("n5_vocab.csv", "r", encoding="utf-8") as file:
+    # file_lines = file.readlines()
 
-# Global right and wrong counters for score
+# Global Tracking -----------------------------------------
+# Right and wrong counters for score
 right_answers = 0
 wrong_answers = 0
 counter = 0
 
 # Empty list to hold the 20 random vocab
-vocab_list = []
+vocab_list = pd.DataFrame()
+
+# Empty list to hold right/wrong words to show at the end
+right_list = []
+wrong_list = []
 
 # ------------------------------------------------------------------------------------------------
 # Functions
@@ -45,48 +50,50 @@ vocab_list = []
 
 def initialization():
     """
-    INITIALIZATION: Resets the scores and populates 20 new vocab. Tied to the 'Start Quiz' button
+    INITIALIZATION: Resets the scores, interface, and populates 20 new vocab. Tied to the 'Start Quiz' button
 
     """
 
     # Global variables
-    global right_answers
+    global right_answers, wrong_answers, counter, vocab_list
     right_answers = 0
-    global wrong_answers
     wrong_answers = 0
-    global counter
     counter = 0
 
-    # Clear the vocab_list []
-    vocab_list.clear()
+    # Clear the vocab_list, righ_list, and wrong_list
+    right_list.clear()
+    wrong_list.clear()
 
-    # Grab 20 vocab randomly from the file. Uses random module to pick from 0 to the length
-    # of the lines in the CSV file
-    for vocab in range(20): # 20 total vocab
-        vocab_list.append(file_lines[random.randint(0, len(file_lines) - 1)]) # Append all 20 random vocab to the list
+    right_answers_list.config(text="")
+    wrong_answers_list.config(text="")
+
+    # Pandas picks 20 random rows using the 'sample' method. 'replace' would change
+    # the word values and create issues. It's set to False.
+    vocab_list = df.sample(n=20, replace=False).reset_index(drop = True)
+    # reset_index(drop = True) will drop the list item if its an empty line
     
     # Calls the next_vocab( ) function to display the first or next vocab
-    next_vocab(vocab_list[0])
+    next_vocab(0)
 
 # --------------------------------------------------------------------------
 
 def next_vocab(vocab):
     """
     NEXT VOCAB: Displays the next vocab in the list. Splits each vocab into parts.
-    Parameters: vocab - This is the string from the vocab list in the file_lines
+    Parameters: vocab: strings from the csv file
     """
 
     # Global variables
     global vocab_label
-    global english
 
     # Split vocab into parts
-    vocab_parts = vocab.strip().split(",") # Strip the word, then split it from the ","
-    japanese_word = vocab_parts[0]         # Japense words
-    romaji = vocab_parts[1]                # Romaji words
+    # "iloc" = integer location. Pandas uses a number to find the position of
+    # the index
+    japanese_word = vocab_list.iloc[vocab]["Japanese"] # Japense words
+    romaji = vocab_list.iloc[vocab]["Romaji"]        # Romaji words
 
     # Creates a label for Tkinter to show the Japanese and Romaji
-    vocab_label.config(text=f"Japanese: {japanese_word}\nRomaji: {romaji}")
+    vocab_label.config(text=f"Japanese:   {japanese_word}\nRomaji:   {romaji}")
 
 # --------------------------------------------------------------------------
 
@@ -97,15 +104,13 @@ def display_english():
     the english version of the word.
     """
     # Global variables
-    global english
-    global vocab_list, counter
+    global english, vocab_list, counter
 
-    # This is the vocab_list[] at the current file line within the CSV
-    vocab = vocab_list[counter]
-
-    vocab_parts = vocab.strip().split(",") # Strip the word, then split it from the ","
-    english_meaning = vocab_parts[2]  # Assignes [2] item which is the English
-    english.config(text=f"Meaning: {english_meaning}") # Shows the English meaning from the CSV file
+    # vocab_parts = vocab.strip().split(",") # Strip the word, then split it from the ","
+    # "iloc" = integer location. Pandas uses a number to find the position of
+    # the index
+    english_meaning = vocab_list.iloc[counter]['English']
+    english.config(text=f"Meaning:   {english_meaning}") # Shows the English meaning from the CSV file
 
 # --------------------------------------------------------------------------
 
@@ -123,57 +128,98 @@ def hide_english():
 def right_answer():
 
     """
-    RIGHT_ANSWER: This increases the counter of right answers. This also contains the logic 
-    to check if the vocabulary is still within the 20 word limit. If it's at 20 words it will
-    end the quiz and show right/wrong answers.
+    RIGHT_ANSWER: This increases the counter of right answers and continues the quiz. 
+    Contains the if statement to continue or end the quiz. If it's at 20 words it will
+    end the quiz and show 
+    right/wrong answers.
     """
-    global vocab_label
-    global counter
-    counter += 1
-    global right_answers
+    global counter, right_list, right_answers
     right_answers += 1
     
-    if counter < 20:
-        next_vocab(vocab_list[counter])
-    elif counter >= 20:
-         vocab_label.config(text=f"Right answers: {right_answers}\nWrong answers: {wrong_answers}")
+    right_list.append(vocab_list.iloc[counter])
+
+    if counter < 19:
+        counter += 1
+        next_vocab(counter)
+    else:
+         end_of_quiz()
     hide_english()
 
 # --------------------------------------------------------------------------
 def wrong_answer():
 
     """
-    WRONG_ANSWER: This increases the counter of wrong answers. This also contains the logic 
-    to check if the vocabulary is still within the 20 word limit. If it's at 20 words it will
+    WRONG_ANSWER: This increases the counter of wrong answers and continues the quiz. 
+    Contains the if statement to continue or end the quiz. If it's at 20 words it will 
     end the quiz and show right/wrong answers.
     """
-    global vocab_label
-    global counter
-    counter += 1
-    global wrong_answers
+    global counter, wrong_list, wrong_answers
     wrong_answers += 1
-    if counter < 20:
-        next_vocab(vocab_list[counter])
-    elif counter >= 20:  
-        vocab_label.config(text=f"Right answers: {right_answers}\nWrong answers: {wrong_answers}")
+
+    wrong_list.append(vocab_list.iloc[counter])
+
+    if counter < 19:
+        counter += 1
+        next_vocab(counter)
+    else:  
+        end_of_quiz()
     hide_english()
 
+# --------------------------------------------------------------------------
+def end_of_quiz():
+
+    """
+    END_OF_QUIZ: Once the 20 word limit is reached from the if statements in right_answer() 
+    or wrong_answer() this function will be called. It will reveal a list of right and wrong
+    answers.
+    """
+    # configure text that appears
+    vocab_label.config(text="Right answers: {right_answers}\n Wrong answers: {wrong_answers}")
+
+    # Join the Japanese, Romaji, and English from the right/wrong lists.
+    # Learned how to use a for loop when assigning values to a variable. This is a common
+    # practice in data science for cleaner code.
+    right_text = "\n".join([f"{r["Japanese"]}, {r["Romaji"]}, {r["English"]}" for r in right_list])
+    wrong_text = "\n".join([f"{r["Japanese"]}, {r["Romaji"]}, {r["English"]}" for r in wrong_list])
+
+    # Assign the text of the labels to the list of right and wrong answers
+    right_answers_list.config(text=f"Vocab Right: \n\n{right_text}")
+    wrong_answers_list.config(text=f"Vocab Wrong: \n\n{wrong_text}")
 # ------------------------------------------------------------------------------------------------
 # Tkinter labels and buttons
 # ------------------------------------------------------------------------------------------------
 
 # Title label - "Japanese N5 Vocab Quiz"
-ttk.Label(frm, text="Japanese N5 Vocab Quiz").grid(column=2, row=0)
+ttk.Label(frm, text="Japanese N5 Vocab Quiz", font=("Arial", 20)).grid(column=2, row=0, padx=0, pady=(0), columnspan=5, rowspan=2)
 
-# Buttons
+# Label for vocab display.
+vocab_label = ttk.Label(frm, text="", font=("Arial", 15))
+vocab_label.grid(column=3, row=3)
+
+# Label for english display (hidden)
+english = ttk.Label(frm, text="", font=("Arial", 15))
+english.grid(column=3, row=4)
+
+# Label for right answers
+right_answers_list = ttk.Label(frm, text="", font=("Ariel", 10))
+right_answers_list.grid(column=1, row=4, padx=50, pady=0)
+
+# Label for wrong answers
+wrong_answers_list = ttk.Label(frm, text="", font=("Ariel", 10))
+wrong_answers_list.grid(column=1, row=5, padx=50, pady=0)
+
+# Buttons ----------------------------------------------------------------------------------------
 # Start quiz button - Triggers initialization( ) function
-ttk.Button(frm, text="Start Quiz", command=initialization).grid(column=0, row=5)
+ttk.Button(frm, text="Start Quiz", command=initialization).grid(column=3, row=6)
+
 # Right answer button - Triggers right_answer( ) function
-ttk.Button(frm, text = "Right", command=right_answer).grid(column=0, row=2)
+ttk.Button(frm, text = "Right", command=right_answer).grid(column=4, row=6)
+
 # Wrong answer button - Triggers wrong_answer( ) function
-ttk.Button(frm, text="Wrong", command=wrong_answer).grid(column=0, row=3)
+ttk.Button(frm, text="Wrong", command=wrong_answer).grid(column=4, row=7)
+
 # English button - Triggers display_english( ) fuction
-ttk.Button(frm, text="English", command=display_english).grid(column=0, row=4)
+ttk.Button(frm, text="English", command=display_english).grid(column=4, row=3)
 
 # Event loop - Ensures the window remains active and repsonsive to user interactions.
 root.mainloop()
