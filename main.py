@@ -9,8 +9,7 @@ Description: An N5 Japanese vocabulary tester in Tkinter (Python GUI)
 # Tkinter section and global variables
 # ------------------------------------------------------------------------------------------------
 
-# Imports
-import random
+# Imports ------------------------------------------------
 import pandas as pd
 from tkinter import *
 from tkinter import ttk
@@ -26,10 +25,6 @@ frm.grid()
 
 # Load the CSV file with Pandas
 df = pd.read_csv("n5_vocab.csv")
-
-# Read the vocab file
-# with open("n5_vocab.csv", "r", encoding="utf-8") as file:
-    # file_lines = file.readlines()
 
 # Global Tracking -----------------------------------------
 # Right and wrong counters for score
@@ -173,8 +168,10 @@ def end_of_quiz():
     or wrong_answer() this function will be called. It will reveal a list of right and wrong
     answers.
     """
+    global right_answers, wrong_answers
+
     # configure text that appears
-    vocab_label.config(text="Right answers: {right_answers}\n Wrong answers: {wrong_answers}")
+    vocab_label.config(text=f"Right answers: {right_answers}\n Wrong answers: {wrong_answers}")
 
     # Join the Japanese, Romaji, and English from the right/wrong lists.
     # Learned how to use a for loop when assigning values to a variable. This is a common
@@ -185,6 +182,7 @@ def end_of_quiz():
     # Assign the text of the labels to the list of right and wrong answers
     right_answers_list.config(text=f"Vocab Right: \n\n{right_text}")
     wrong_answers_list.config(text=f"Vocab Wrong: \n\n{wrong_text}")
+
 # ------------------------------------------------------------------------------------------------
 # Tkinter labels and buttons
 # ------------------------------------------------------------------------------------------------
