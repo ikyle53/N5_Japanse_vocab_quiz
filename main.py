@@ -66,7 +66,7 @@ counter = 0
 # Empty list to hold the 20 random vocab
 vocab_list = pd.DataFrame()
 
-# Empty list to hold right/wrong words to show at the end
+# Empty list to hold right/wrong words to show at the end (Summary)
 right_list = []
 wrong_list = []
 
@@ -190,8 +190,10 @@ def right_answer():
     global counter, right_list, right_answers
     right_answers += 1
     
+    # Append the current word to the summary of right answers
     right_list.append(vocab_list.iloc[counter])
 
+    # If statment to keep the quiz going or end it.
     if counter < 19:
         counter += 1
         next_vocab(counter)
@@ -210,8 +212,10 @@ def wrong_answer():
     global counter, wrong_list, wrong_answers
     wrong_answers += 1
 
+    # Append the current word to the summary of wrong answers
     wrong_list.append(vocab_list.iloc[counter])
 
+    # If statment to keep the quiz going or end it.
     if counter < 19:
         counter += 1
         next_vocab(counter)
